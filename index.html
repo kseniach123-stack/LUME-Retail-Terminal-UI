@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LUME | Retail Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="Css/main.css">
+    <link rel="stylesheet" href="Css/mobile.css">
+
+    <style>
+        .stage, .sidebar, .burger-btn, #cart-trigger, #cart-panel {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .blur-content {
+            filter: blur(10px) grayscale(20%);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        #cart-panel { 
+            position: fixed !important;
+            top: 0;
+            right: -100%; 
+            width: 100% !important; 
+            height: 100vh;
+            background: #fff !important;
+            z-index: 3000 !important; 
+            display: flex !important;
+            flex-direction: column;
+        }
+
+        body.cart-open #cart-panel {
+            right: 0 !important;
+        }
+
+        #cart-panel.hidden {
+            display: flex !important; 
+            pointer-events: none;
+            opacity: 0;
+        }
+        
+        body.cart-open #cart-panel.hidden {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="menu-overlay" onclick="LumeTerminal.actions.closeAll()"></div>
+
+    <button class="burger-btn" onclick="LumeTerminal.ui.toggleMenu()">
+        <span></span><span></span>
+    </button>
+
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h1>LUME</h1>
+            <form id="auth-form">
+                <input type="text" class="auth-input" placeholder="USERNAME" required>
+                <input type="password" class="auth-input" placeholder="PASSWORD" required>
+                <button type="submit" class="btn-login">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="terminal-app" class="hidden">
+        
+        <aside class="sidebar">
+            <div class="brand">LUME</div>
+            <div class="scan-action">
+                <button class="btn-round-scan" onclick="LumeTerminal.actions.openScanner()">Scan Item</button>
+            </div>
+            <nav class="nav-menu">
+                <div class="nav-item active" data-tab="dashboard" onclick="LumeTerminal.ui.switchTab('dashboard')">Dashboard</div>
+                <div class="nav-item" data-tab="operations" onclick="LumeTerminal.ui.switchTab('operations')">Operations</div>
+                <div class="nav-item" data-tab="analytics" onclick="LumeTerminal.ui.switchTab('analytics')">Analytics</div>
+            </nav>
+        </aside>
+
+        <div id="cart-trigger" onclick="LumeTerminal.ui.toggleCart()">
+            <span>Cart</span>
+            <div id="cart-count-badge">0</div>
+        </div>
+
+        <div id="cart-panel">
+            <div class="cart-panel-header">
+                <h2 class="cart-panel-title">Current Cart</h2>
+                <span class="cart-close-btn" onclick="LumeTerminal.ui.toggleCart()">✕</span>
+            </div>
+            <div id="cart-items-list"></div>
+            <div class="cart-panel-footer">
+                <div class="cart-total-section">
+                    <span>Total:</span>
+                    <span id="cart-total-price">£0.00</span>
+                </div>
+                <button onclick="LumeTerminal.actions.completeTransaction()" class="btn-login btn-finish-transaction">Finish Transaction</button>
+            </div>
+        </div>
+
+        <main class="stage">
+            <section id="sec-dashboard">
+                <div class="search-bar-container">
+                    <input type="text" class="search-input" id="inventory-search" placeholder="Search product..." oninput="LumeTerminal.actions.search(this.value)">
+                </div>
+                <div id="search-suggestions" class="suggestions-box hidden"></div>
+                <div class="product-grid" id="grid-container"></div>
+            </section>
+            
+<section id="sec-operations" class="hidden">
+    <div class="content-module">
+        <div class="module-header">
+            <h2>Transactions</h2>
+        </div>
+        <div id="ops-list" class="transaction-list">
+        </div>
+    </div>
+</section>
+
+
+<section id="sec-analytics" class="hidden">
+    <div class="content-module">
+        <div class="module-header">
+            <h2>Analytics</h2>
+        </div>
+        <div class="analytics-grid">
+            <div class="kpi-card">
+                <span class="kpi-label">Total Revenue</span>
+                <div class="kpi-value" id="stat-revenue">£0.00</div>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Average Sale</span>
+                <div class="kpi-value" id="stat-atv">£0.00</div>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Orders</span>
+                <div class="kpi-value" id="stat-count">0</div>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Items Total</span>
+                <div class="kpi-value" id="stat-items-total">0</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+        </main>
+    </div>
+
+    <div id="camera-module" class="hidden">
+        <button class="switch-camera-btn" onclick="LumeTerminal.actions.switchCamera()">
+            Switch Camera
+        </button>
+
+    <script src="Js/app.js"></script>
+    <script src="Js/ui.js"></script>
+    <script src="Js/actions.js"></script>
+</body>
+</html>
