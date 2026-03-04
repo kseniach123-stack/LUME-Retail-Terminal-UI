@@ -105,19 +105,6 @@ git push origin master:main
 
 ---
 
-## For real store (online version)
-
-Right now data is saved only on iPad. For a real store you need a **server**:
-
-- 📱 Multiple registers - one store (same product list for all)
-- ☁️ Cloud backup (if register crashes, data is safe)
-- 📊 Live reports (owner sees sales in real time)
-- 🔒 Security (password, track who sold what, when)
-
-This needs Node.js server + MongoDB (or other database).
-
----
-
 ## Links
 
 GitHub: [@kseniach123-stack](https://github.com/kseniach123-stack)
