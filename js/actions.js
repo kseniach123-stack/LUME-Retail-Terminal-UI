@@ -48,7 +48,7 @@ LumeTerminal.actions.search = function(query) {
                 <img src="${item.img}" alt="${item.name}">
                 <div class="suggestion-item-content">
                     <div class="suggestion-item-name">${item.name}</div>
-                    <div class="suggestion-item-price">┬ú${item.price.toFixed(2)}</div>
+                    <div class="suggestion-item-price">£${item.price.toFixed(2)}</div>
                 </div>
                 <span>+</span>
             </div>

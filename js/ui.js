@@ -60,7 +60,7 @@
             <div class="product-card">
                 <img src="${item.img}" alt="${item.name}">
                 <div class="p-name">${item.name}</div>
-                <div class="p-price">┬ú${item.price.toFixed(2)}</div>
+                <div class="p-price">£${item.price.toFixed(2)}</div>
                 <button class="btn-sell" onclick="LumeTerminal.actions.addToCart(${item.id})">Add to cart</button>
             </div>
         `).join('');
@@ -85,7 +85,7 @@
                         <span class="transaction-row-time">${s.date || ''} ÔÇö ${s.time}</span>
                     </div>
                     <div class="row-price">
-                        ┬ú${Number(s.price).toFixed(2)}
+                        £${Number(s.price).toFixed(2)}
                     </div>
                 </div>
             `).join('');
@@ -115,10 +115,10 @@
                             <img src="${item.img}" alt="${item.name}" class="cart-item-img">
                             <div class="cart-item-info">
                                 <div class="cart-item-name">${item.name}</div>
-                                <div class="cart-item-quantity">${item.quantity} x ┬ú${item.price.toFixed(2)}</div>
+                                <div class="cart-item-quantity">${item.quantity} x £${item.price.toFixed(2)}</div>
                             </div>
                         </div>
-                        <span class="cart-item-price">┬ú${itemTotal.toFixed(2)}</span>
+                        <span class="cart-item-price">£${itemTotal.toFixed(2)}</span>
                     </div>`;
             }).join('');
 
@@ -126,7 +126,7 @@
                 countBadge.innerText = totalItemsCount;
             }
             if (totalDisp) {
-                totalDisp.innerText = `┬ú${total.toFixed(2)}`;
+                totalDisp.innerText = `£${total.toFixed(2)}`;
             }
         } catch (error) {
             console.error('Error updating cart UI:', error);
@@ -141,8 +141,8 @@
             const averageValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
             const statElements = {
-                'stat-revenue': `┬ú${totalRevenue.toFixed(2)}`,
-                'stat-atv': `┬ú${averageValue.toFixed(2)}`,
+                'stat-revenue': `£${totalRevenue.toFixed(2)}`,
+                'stat-atv': `£${averageValue.toFixed(2)}`,
                 'stat-count': totalOrders,
                 'stat-items-total': totalOrders
             };

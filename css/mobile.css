@@ -1,11 +1,5 @@
 ﻿@media (max-width: 767px) {
 
-   .auth-card { width: 90%; padding: 40px 20px; border-radius: 10px;}
-   .auth-form { display: flex; flex-direction: column; gap: 15px; }
-   .auth-card h1 { font-size: 1.2rem; letter-spacing: 6px; margin-bottom: 30px; }
-   .auth-input { padding: 12px; font-size: 0.8rem; }   
-   .btn-login { width: 75%; padding: 12px; font-size: 0.8rem; margin-top: 10px; border-radius: 10px; }
-    
    .sidebar {
         width: 100% !important;
     }
