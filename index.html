@@ -51,18 +51,18 @@
 </head>
 <body>
 
-    <div class="menu-overlay" onclick="LumeTerminal.actions.closeAll()"></div>
+    <div class="menu-overlay" onclick="LumeTerminal.actions.closeAll()" aria-hidden="true"></div>
 
-    <button class="burger-btn" onclick="LumeTerminal.ui.toggleMenu()">
+    <button class="burger-btn" onclick="LumeTerminal.ui.toggleMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
         <span></span><span></span>
     </button>
 
-    <div id="auth-screen">
+    <div id="auth-screen" role="dialog" aria-labelledby="auth-title">
         <div class="auth-card">
-            <h1>LUME</h1>
-            <form id="auth-form">
-                <input type="text" class="auth-input" placeholder="USERNAME" required>
-                <input type="password" class="auth-input" placeholder="PASSWORD" required>
+            <h1 id="auth-title">LUME</h1>
+            <form id="auth-form" aria-label="Login form">
+                <input type="text" class="auth-input" placeholder="USERNAME" required aria-label="Username" autocomplete="username">
+                <input type="password" class="auth-input" placeholder="PASSWORD" required aria-label="Password" autocomplete="current-password">
                 <button type="submit" class="btn-login">Login</button>
             </form>
         </div>
@@ -70,79 +70,79 @@
 
     <div id="terminal-app" class="hidden">
         
-        <aside class="sidebar">
-            <div class="brand">LUME</div>
+        <aside class="sidebar" role="navigation" aria-label="Main navigation">
+            <div class="brand" role="heading" aria-level="1">LUME</div>
             <div class="scan-action">
-                <button class="btn-round-scan" onclick="LumeTerminal.actions.openScanner()">Scan Item</button>
+                <button class="btn-round-scan" onclick="LumeTerminal.actions.openScanner()" aria-label="Open barcode scanner">Scan Item</button>
             </div>
-            <nav class="nav-menu">
-                <div class="nav-item active" data-tab="dashboard" onclick="LumeTerminal.ui.switchTab('dashboard')">Dashboard</div>
-                <div class="nav-item" data-tab="operations" onclick="LumeTerminal.ui.switchTab('operations')">Operations</div>
-                <div class="nav-item" data-tab="analytics" onclick="LumeTerminal.ui.switchTab('analytics')">Analytics</div>
+            <nav class="nav-menu" role="tablist">
+                <div class="nav-item active" data-tab="dashboard" onclick="LumeTerminal.ui.switchTab('dashboard')" role="tab" aria-selected="true" tabindex="0" onkeypress="if(event.key==='Enter')LumeTerminal.ui.switchTab('dashboard')">Dashboard</div>
+                <div class="nav-item" data-tab="operations" onclick="LumeTerminal.ui.switchTab('operations')" role="tab" aria-selected="false" tabindex="0" onkeypress="if(event.key==='Enter')LumeTerminal.ui.switchTab('operations')">Operations</div>
+                <div class="nav-item" data-tab="analytics" onclick="LumeTerminal.ui.switchTab('analytics')" role="tab" aria-selected="false" tabindex="0" onkeypress="if(event.key==='Enter')LumeTerminal.ui.switchTab('analytics')">Analytics</div>
             </nav>
         </aside>
 
-        <div id="cart-trigger" onclick="LumeTerminal.ui.toggleCart()">
+        <button id="cart-trigger" onclick="LumeTerminal.ui.toggleCart()" aria-label="Open shopping cart" aria-expanded="false">
             <span>Cart</span>
-            <div id="cart-count-badge">0</div>
-        </div>
+            <div id="cart-count-badge" aria-label="Items in cart">0</div>
+        </button>
 
-        <div id="cart-panel">
+        <div id="cart-panel" role="dialog" aria-labelledby="cart-title" aria-modal="true">
             <div class="cart-panel-header">
-                <h2 class="cart-panel-title">Current Cart</h2>
-                <span class="cart-close-btn" onclick="LumeTerminal.ui.toggleCart()">✕</span>
+                <h2 class="cart-panel-title" id="cart-title">Current Cart</h2>
+                <button class="cart-close-btn" onclick="LumeTerminal.ui.toggleCart()" aria-label="Close cart">✕</button>
             </div>
-            <div id="cart-items-list"></div>
+            <div id="cart-items-list" role="list" aria-live="polite"></div>
             <div class="cart-panel-footer">
                 <div class="cart-total-section">
                     <span>Total:</span>
-                    <span id="cart-total-price">£0.00</span>
+                    <span id="cart-total-price" aria-live="polite">£0.00</span>
                 </div>
-                <button onclick="LumeTerminal.actions.completeTransaction()" class="btn-login btn-finish-transaction">Finish Transaction</button>
+                <button onclick="LumeTerminal.actions.completeTransaction()" class="btn-login btn-finish-transaction" aria-label="Complete transaction and checkout">Finish Transaction</button>
             </div>
         </div>
 
-        <main class="stage">
-            <section id="sec-dashboard">
+        <main class="stage" role="main">
+            <section id="sec-dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
                 <div class="search-bar-container">
-                    <input type="text" class="search-input" id="inventory-search" placeholder="Search product..." oninput="LumeTerminal.actions.search(this.value)">
+                    <input type="text" class="search-input" id="inventory-search" placeholder="Search product..." oninput="LumeTerminal.actions.search(this.value)" aria-label="Search products" aria-autocomplete="list" aria-controls="search-suggestions">
                 </div>
-                <div id="search-suggestions" class="suggestions-box hidden"></div>
-                <div class="product-grid" id="grid-container"></div>
+                <div id="search-suggestions" class="suggestions-box hidden" role="listbox" aria-label="Product suggestions"></div>
+                <div class="product-grid" id="grid-container" role="grid" aria-label="Product catalog"></div>
             </section>
             
-<section id="sec-operations" class="hidden">
+<section id="sec-operations" class="hidden" role="tabpanel" aria-labelledby="operations-tab">
     <div class="content-module">
         <div class="module-header">
-            <h2>Transactions</h2>
+            <h2 id="operations-heading">Transactions</h2>
         </div>
-        <div id="ops-list" class="transaction-list">
+        <div id="ops-list" class="transaction-list" role="list" aria-live="polite" aria-label="Transaction history">
         </div>
     </div>
 </section>
 
 
-<section id="sec-analytics" class="hidden">
+<section id="sec-analytics" class="hidden" role="tabpanel" aria-labelledby="analytics-tab">
     <div class="content-module">
         <div class="module-header">
-            <h2>Analytics</h2>
+            <h2 id="analytics-heading">Analytics</h2>
         </div>
-        <div class="analytics-grid">
-            <div class="kpi-card">
+        <div class="analytics-grid" role="region" aria-label="Sales analytics dashboard">
+            <div class="kpi-card" role="article">
                 <span class="kpi-label">Total Revenue</span>
-                <div class="kpi-value" id="stat-revenue">£0.00</div>
+                <div class="kpi-value" id="stat-revenue" aria-live="polite">£0.00</div>
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card" role="article">
                 <span class="kpi-label">Average Sale</span>
-                <div class="kpi-value" id="stat-atv">£0.00</div>
+                <div class="kpi-value" id="stat-atv" aria-live="polite">£0.00</div>
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card" role="article">
                 <span class="kpi-label">Orders</span>
-                <div class="kpi-value" id="stat-count">0</div>
+                <div class="kpi-value" id="stat-count" aria-live="polite">0</div>
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card" role="article">
                 <span class="kpi-label">Items Total</span>
-                <div class="kpi-value" id="stat-items-total">0</div>
+                <div class="kpi-value" id="stat-items-total" aria-live="polite">0</div>
             </div>
         </div>
     </div>
@@ -151,10 +151,15 @@
         </main>
     </div>
 
-    <div id="camera-module" class="hidden">
-        <button class="switch-camera-btn" onclick="LumeTerminal.actions.switchCamera()">
+    <div id="camera-module" class="hidden" role="dialog" aria-labelledby="scanner-title" aria-modal="true">
+        <h2 id="scanner-title" class="visually-hidden">Barcode Scanner</h2>
+        <button class="switch-camera-btn" onclick="LumeTerminal.actions.switchCamera()" aria-label="Switch between front and back camera">
             Switch Camera
         </button>
+        <video id="video-feed" aria-label="Camera feed for barcode scanning" autoplay playsinline></video>
+        <div id="scan-counter" aria-live="assertive" aria-atomic="true"></div>
+        <button onclick="LumeTerminal.actions.finishScanning()" aria-label="Close scanner and return to main screen">Close Scanner</button>
+    </div>
 
     <script src="app.js?v=4"></script>
     <script src="ui.js?v=4"></script>
