@@ -1,7 +1,7 @@
 ﻿@media (max-width: 767px) {
 
    .sidebar {
-        width: 100% !important;
+        width: 80%;
     }
 
     .search-bar-container { 
