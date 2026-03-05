@@ -59,6 +59,13 @@
     .product-card img { height: 8.75rem !important; }
     .p-name { font-size: 0.75rem !important; }
 
+    .btn-sell {
+        font-size: 0.8rem !important;
+        padding: 0.625rem 0.3125rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+    }
+
  
     #cart-panel {
         width: 17.5rem !important;
