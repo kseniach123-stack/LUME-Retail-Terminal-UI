@@ -94,6 +94,16 @@
     .content-module { padding: 1.875rem 0.9375rem !important; }
     .analytics-grid { grid-template-columns: 1fr !important; }
     .kpi-value { font-size: 1.8rem !important; }
+
+    .product-card:hover,
+    .product-card:active {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .product-card:active {
+        opacity: 0.7 !important;
+    }
 }
 
 /* TABLET - 30.0625rem до 47.9375rem */
