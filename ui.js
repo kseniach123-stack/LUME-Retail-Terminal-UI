@@ -104,7 +104,7 @@ LumeTerminal.ui = {
                 <img src="${item.img}" alt="${item.name}">
                 <div class="p-name">${item.name}</div>
                 <div class="p-price">£${item.price.toFixed(2)}</div>
-                <button class="btn-sell" onclick="LumeTerminal.actions.addToCart(${item.id})">Add to cart</button>
+                <button class="btn-sell" onclick="LumeTerminal.actions.addToCart(${item.id})">Add</button>
             </div>
         `).join('');
     },
