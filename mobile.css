@@ -1,7 +1,56 @@
-﻿/* MOBILE - до 30rem*/
-@media (max-width: 30rem) {
+body:not(.app-active).sidebar-open::after {
+    display: none !important;
+}
+/* MOBILE - до 30rem*/
+/* Topbar flex alignment for all devices */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    box-sizing: border-box;
+    background: #fff;
+    z-index: 1001;
+    position: relative;
+}
+@media (max-width: 480px) {
+            .topbar {
+                align-items: center;
+            }
+            .burger-btn,
+            #cart-trigger {
+                height: 2.5rem;
+                min-width: 2.5rem;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 0 !important;
+                box-sizing: border-box;
+            }
+            #cart-trigger span {
+                display: flex;
+                align-items: center;
+                height: 100%;
+            }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.5rem 1rem;
+            box-sizing: border-box;
+            background: #fff;
+            z-index: 1001;
+            position: relative;
+        }
+    .module-header {
+        padding-left: 0 !important;
+        margin-bottom: 1.5rem !important;
+    }
    .sidebar {
-        width: 3.75rem !important;
+        width: 90%;
         min-width: 5rem !important;
         left: -5rem !important;
         top: 0 !important;
@@ -55,7 +104,6 @@
         padding: 0.625rem !important;
     }
 
-   
     .product-card img { height: 8.75rem !important; }
     .p-name { font-size: 0.75rem !important; }
 
@@ -69,9 +117,22 @@
         min-width: 5rem !important;
         border-radius: 0.5rem !important;
         overflow: hidden !important;
+        transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+    }
+    .btn-sell:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+      
+    }
+    #cart-trigger, .burger-btn {
+        padding: 0.5rem !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem !important;
+
     }
 
- 
     #cart-panel {
         width: 17.5rem !important;
         min-width: 17.5rem !important;
@@ -91,7 +152,20 @@
         width: 90% !important;
     }
 
-    .content-module { padding: 1.875rem 0.9375rem !important; }
+    .content-module { 
+        display: block;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .module-header h2 {
+        font-size: 1.25rem !important;
+        margin: 10px 0 !important;
+        text-align: center !important;
+        width: 100%;
+        display: block;
+    }
+    
     .analytics-grid { grid-template-columns: 1fr !important; }
     .kpi-value { font-size: 1.8rem !important; }
 
@@ -109,9 +183,9 @@
 /* TABLET - 30.0625rem до 47.9375rem */
 @media (min-width: 30.0625rem) and (max-width: 47.9375rem) {
    .sidebar {
-        width: 5rem !important;
+        width: 50%;
         min-width: 5rem !important;
-        left: -5rem !important;
+        left: -50% !important;
         top: 0 !important;
         height: 100vh !important;
         position: fixed !important;
@@ -150,7 +224,12 @@
         right: -20rem !important;
     }
 
-    .content-module { padding: 1.875rem 1.25rem !important; }
+    .module-header {
+        font-size: 1.25rem !important;
+        margin: 10px 0 !important;
+        display: block !important;
+        text-align: center !important;
+    }
     .analytics-grid { grid-template-columns: 1fr !important; }
 }
 
