@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LUME | Retail Terminal</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
@@ -51,7 +52,6 @@
 </head>
 <body>
 
-    <div class="menu-overlay" onclick="LumeTerminal.actions.closeAll()" aria-hidden="true"></div>
 
     <button class="burger-btn" onclick="LumeTerminal.ui.toggleMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
         <span></span><span></span>
@@ -75,6 +75,9 @@
             <div class="scan-action">
                 <button class="btn-round-scan" onclick="LumeTerminal.actions.openScanner()" aria-label="Open barcode scanner">Scan Item</button>
             </div>
+            <div class="logout-action" style="position:absolute;bottom:32px;left:0;width:100%;display:flex;justify-content:center;">
+                <button class="btn-logout" onclick="LumeTerminal.ui.logout()" aria-label="Log out" style="width:50%;min-width:80px;max-width:140px;padding:0.5em 0.5em;font-size:0.8rem;border-radius:1.5em;background:#eee;color:#333;border:none;cursor:pointer;">Log out</button>
+            </div>
             <nav class="nav-menu" role="tablist">
                 <div class="nav-item active" data-tab="dashboard" onclick="LumeTerminal.ui.switchTab('dashboard')" role="tab" aria-selected="true" tabindex="0" onkeypress="if(event.key==='Enter')LumeTerminal.ui.switchTab('dashboard')">Dashboard</div>
                 <div class="nav-item" data-tab="operations" onclick="LumeTerminal.ui.switchTab('operations')" role="tab" aria-selected="false" tabindex="0" onkeypress="if(event.key==='Enter')LumeTerminal.ui.switchTab('operations')">Operations</div>
@@ -82,27 +85,33 @@
             </nav>
         </aside>
 
-        <button id="cart-trigger" onclick="LumeTerminal.ui.toggleCart()" aria-label="Open shopping cart" aria-expanded="false">
-            <span>Cart</span>
-            <div id="cart-count-badge" aria-label="Items in cart">0</div>
-        </button>
 
-        <div id="cart-panel" role="dialog" aria-labelledby="cart-title" aria-modal="true">
-            <div class="cart-panel-header">
-                <h2 class="cart-panel-title" id="cart-title">Current Cart</h2>
-                <button class="cart-close-btn" onclick="LumeTerminal.ui.toggleCart()" aria-label="Close cart">✕</button>
-            </div>
-            <div id="cart-items-list" role="list" aria-live="polite"></div>
-            <div class="cart-panel-footer">
-                <div class="cart-total-section">
-                    <span>Total:</span>
-                    <span id="cart-total-price" aria-live="polite">£0.00</span>
-                </div>
-                <button onclick="LumeTerminal.actions.completeTransaction()" class="btn-login btn-finish-transaction" aria-label="Complete transaction and checkout">Finish Transaction</button>
-            </div>
-        </div>
 
         <main class="stage" role="main">
+            <div class="topbar">
+    <button class="burger-btn" onclick="LumeTerminal.ui.toggleMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span></span><span></span>
+    </button>
+    <button id="cart-trigger" onclick="LumeTerminal.ui.toggleCart()" aria-label="Open shopping cart" aria-expanded="false">
+        <span>Cart</span>
+        <div id="cart-count-badge" aria-label="Items in cart">0</div>
+    </button>
+            </div>
+
+    <div id="cart-panel" role="dialog" aria-labelledby="cart-title" aria-modal="true">
+        <div class="cart-panel-header">
+            <h2 class="cart-panel-title" id="cart-title">Current Cart</h2>
+            <button class="cart-close-btn" onclick="LumeTerminal.ui.toggleCart()" aria-label="Close cart">✕</button>
+        </div>
+        <div id="cart-items-list" role="list" aria-live="polite"></div>
+        <div class="cart-panel-footer">
+            <div class="cart-total-section">
+                <span>Total:</span>
+                <span id="cart-total-price" aria-live="polite">£0.00</span>
+            </div>
+            <button onclick="LumeTerminal.actions.completeTransaction()" class="btn-login btn-finish-transaction" aria-label="Complete transaction and checkout">Finish Transaction</button>
+        </div>
+    </div>
             <section id="sec-dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
                 <div class="search-bar-container">
                     <input type="text" class="search-input" id="inventory-search" placeholder="Search product..." oninput="LumeTerminal.actions.search(this.value)" aria-label="Search products" aria-autocomplete="list" aria-controls="search-suggestions">
@@ -129,12 +138,13 @@
         </div>
         <div class="analytics-grid" role="region" aria-label="Sales analytics dashboard">
             <div class="kpi-card" role="article">
-                <span class="kpi-label">Total Revenue</span>
+                <span class="kpi-label">Total Sales</span>
                 <div class="kpi-value" id="stat-revenue" aria-live="polite">£0.00</div>
-            </div>
-            <div class="kpi-card" role="article">
-                <span class="kpi-label">Average Sale</span>
-                <div class="kpi-value" id="stat-atv" aria-live="polite">£0.00</div>
+                <hr style="margin: 10px 0; border: none; border-top: 1px solid #ddd;">
+                <div style="font-size:18px;opacity:0.6;display:flex;align-items:center;gap:8px;justify-content:flex-start;">
+                  <span>ATV</span>
+                  <span id="stat-atv" aria-live="polite">£0.00</span>
+                </div>
             </div>
             <div class="kpi-card" role="article">
                 <span class="kpi-label">Orders</span>
