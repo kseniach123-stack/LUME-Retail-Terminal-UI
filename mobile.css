@@ -1,3 +1,6 @@
+body.sidebar-open .topbar {
+    display: none !important;
+}
 body:not(.app-active).sidebar-open::after {
     display: none !important;
 }
