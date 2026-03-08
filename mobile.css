@@ -185,6 +185,9 @@ body:not(.app-active).sidebar-open::after {
 
 /* TABLET - 30.0625rem до 47.9375rem */
 @media (min-width: 30.0625rem) and (max-width: 47.9375rem) {
+    body.sidebar-open .topbar {
+        display: none !important;
+    }
    .sidebar {
         width: 50%;
         min-width: 5rem !important;
