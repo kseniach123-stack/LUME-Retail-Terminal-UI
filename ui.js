@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // UI RENDERING MODULE
 // ============================================
 
@@ -7,6 +7,14 @@
  * Separated from business logic (actions.js) for clean architecture
  */
 LumeTerminal.ui = {
+        /**
+         * Log out and return to login page
+         */
+        logout() {
+            document.getElementById('terminal-app').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.body.classList.remove('app-active');
+        },
     /**
      * Initialize authentication flow
      * 
@@ -215,27 +223,21 @@ LumeTerminal.ui = {
     renderAnalytics() {
         try {
             const sales = LumeTerminal.state.sales || [];
-            
-            // Calculate key metrics
             const totalRevenue = sales.reduce((sum, s) => sum + Number(s.price || 0), 0);
             const totalOrders = sales.length;
             const averageValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-            // Map metrics to DOM elements
-            const statElements = {
-                'stat-revenue': `£${totalRevenue.toFixed(2)}`,
-                'stat-atv': `£${averageValue.toFixed(2)}`,
-                'stat-count': totalOrders,
-                'stat-items-total': totalOrders
-            };
+            // Update Total Sales and ATV (now both in the same card)
+            const statRevenue = document.getElementById('stat-revenue');
+            if (statRevenue) statRevenue.innerText = `£${totalRevenue.toFixed(2)}`;
+            const statATV = document.getElementById('stat-atv');
+            if (statATV) statATV.innerText = `£${averageValue.toFixed(2)}`;
 
-            // Update all stat displays
-            Object.entries(statElements).forEach(([id, value]) => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.innerText = value;
-                }
-            });
+            // Update other stats as before
+            const statCount = document.getElementById('stat-count');
+            if (statCount) statCount.innerText = totalOrders;
+            const statItems = document.getElementById('stat-items-total');
+            if (statItems) statItems.innerText = totalOrders;
         } catch (error) {
             console.error('Error rendering analytics:', error);
         }
