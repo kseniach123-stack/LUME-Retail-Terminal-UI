@@ -236,7 +236,7 @@ body:not(.app-active).sidebar-open::after {
 /* iPad - 48rem до 64rem */
 @media (min-width: 48rem) and (max-width: 64rem) {
     .sidebar {
-        width: 17.5rem !important;
+        width: 50%;
         min-width: 17.5rem !important;
         top: 0 !important;
         height: 100vh !important;
