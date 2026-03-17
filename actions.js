@@ -15,7 +15,7 @@ LumeTerminal.actions.isScanning = false;
  * - If new item, add with quantity = 1
  * - Update UI to reflect changes
  */
-LumeTerminal.actions.addToCart = function(itemId) {
+LumeTerminal.actions.addToCart = function(itemId, evt) {
     try {
         // Validate state exists before accessing
         if (!LumeTerminal.state || !LumeTerminal.state.inventory) {
@@ -42,6 +42,24 @@ LumeTerminal.actions.addToCart = function(itemId) {
 
         // Refresh cart UI with updated data
         LumeTerminal.ui.updateCartUI();
+
+        // Visual feedback: button press + cart badge pulse
+        const btn = evt && evt.currentTarget ? evt.currentTarget : null;
+        if (btn && btn.classList) {
+            btn.classList.remove('btn-added');
+            // restart animation if user clicks quickly
+            void btn.offsetWidth;
+            btn.classList.add('btn-added');
+            setTimeout(() => btn.classList.remove('btn-added'), 450);
+        }
+
+        const badge = document.getElementById('cart-count-badge');
+        if (badge && badge.classList) {
+            badge.classList.remove('cart-badge-bump');
+            void badge.offsetWidth;
+            badge.classList.add('cart-badge-bump');
+            setTimeout(() => badge.classList.remove('cart-badge-bump'), 450);
+        }
     } catch (error) {
         console.error('Error adding item to cart:', error);
     }
@@ -89,7 +107,7 @@ LumeTerminal.actions.search = function(query) {
         suggestionsBox.classList.remove('hidden');
         suggestionsBox.innerHTML = matches.map(item => `
             <div class="suggestion-item"
-                 onclick="LumeTerminal.actions.addToCart(${item.id}); document.getElementById('inventory-search').value=''; document.getElementById('search-suggestions').classList.add('hidden');">
+                 onclick="LumeTerminal.actions.selectSuggestion(${item.id})">
                 <img src="${item.img}" alt="${item.name}">
                 <div class="suggestion-item-content">
                     <div class="suggestion-item-name">${item.name}</div>
@@ -102,6 +120,25 @@ LumeTerminal.actions.search = function(query) {
         // Show "no results" message
         suggestionsBox.innerHTML = '<div style="padding: 15px; color: #888; font-size: 0.8rem;">No products found</div>';
         suggestionsBox.classList.remove('hidden');
+    }
+};
+
+/**
+ * Handle click on an autocomplete suggestion
+ * Keeps inline onclick minimal to avoid token/quoting issues.
+ */
+LumeTerminal.actions.selectSuggestion = function(itemId) {
+    try {
+        LumeTerminal.actions.addToCart(itemId);
+        const input = document.getElementById('inventory-search');
+        if (input) input.value = '';
+        const box = document.getElementById('search-suggestions');
+        if (box) {
+            box.classList.add('hidden');
+            box.innerHTML = '';
+        }
+    } catch (error) {
+        console.error('Error selecting suggestion:', error);
     }
 };
 
@@ -134,16 +171,52 @@ LumeTerminal.actions.completeTransaction = function() {
         const total = LumeTerminal.state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         // Create transaction record with metadata
+        const itemsSnapshot = LumeTerminal.state.cart.map(i => ({
+            id: i.id,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+            img: i.img
+        }));
+
         const transaction = {
+            id: (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+                ? globalThis.crypto.randomUUID()
+                : `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+            user: (LumeTerminal.ui?.auth?.getCurrentUser && LumeTerminal.ui.auth.getCurrentUser()) || 'staff',
+            createdAt: new Date().toISOString(),
             name: `${LumeTerminal.state.cart.length} items purchased`,
             price: total,
             time: new Date().toLocaleTimeString(),
-            date: new Date().toLocaleDateString()
+            date: new Date().toLocaleDateString(),
+            syncStatus: navigator.onLine ? 'synced' : 'pending',
+            items: itemsSnapshot
         };
 
-        // Persist to localStorage for offline functionality
+        // Persist locally (offline-first)
         LumeTerminal.state.sales.push(transaction);
-        localStorage.setItem('lume_vault', JSON.stringify(LumeTerminal.state.sales));
+
+        const salesKey = (typeof SALES_KEY !== 'undefined') ? SALES_KEY : 'lume_vault';
+        localStorage.setItem(salesKey, JSON.stringify(LumeTerminal.state.sales));
+
+        // If offline, also queue for "sync" (demo outbox)
+        if (!navigator.onLine) {
+            const outboxKey = (typeof OUTBOX_KEY !== 'undefined') ? OUTBOX_KEY : 'lume_outbox_v1';
+            const existing = (typeof safeJsonParse === 'function')
+                ? safeJsonParse(localStorage.getItem(outboxKey), [])
+                : (JSON.parse(localStorage.getItem(outboxKey) || '[]'));
+            const outbox = Array.isArray(existing) ? existing : [];
+            outbox.push({ id: transaction.id, createdAt: new Date().toISOString() });
+            localStorage.setItem(outboxKey, JSON.stringify(outbox));
+        } else {
+            // If online, mark last sync moment for UI
+            const lastSyncKey = (typeof LAST_SYNC_KEY !== 'undefined') ? LAST_SYNC_KEY : 'lume_last_sync_v1';
+            localStorage.setItem(lastSyncKey, new Date().toISOString());
+        }
+
+        if (typeof updateSyncStatusUI === 'function') {
+            updateSyncStatusUI();
+        }
 
         // Clear cart after successful transaction
         LumeTerminal.state.cart = [];
@@ -158,10 +231,44 @@ LumeTerminal.actions.completeTransaction = function() {
             LumeTerminal.ui.renderAnalytics();
         }
 
-        alert('Transaction completed successfully!');
+        alert(navigator.onLine ? 'Transaction completed successfully!' : 'Saved offline (pending sync).');
     } catch (error) {
         console.error('Error completing transaction:', error);
         alert('Error completing transaction');
+    }
+};
+
+// ============================================
+// CART UTILITIES
+// ============================================
+
+/**
+ * Clear all items from cart
+ */
+LumeTerminal.actions.clearCart = function() {
+    try {
+        if (!Array.isArray(LumeTerminal.state.cart) || LumeTerminal.state.cart.length === 0) return;
+
+        LumeTerminal.state.cart = [];
+        if (LumeTerminal.ui?.updateCartUI) LumeTerminal.ui.updateCartUI();
+
+        // Optional: small feedback on the badge
+        const badge = document.getElementById('cart-count-badge');
+        if (badge && badge.classList) {
+            badge.classList.remove('cart-badge-bump');
+            void badge.offsetWidth;
+            badge.classList.add('cart-badge-bump');
+            setTimeout(() => badge.classList.remove('cart-badge-bump'), 450);
+        }
+
+        // Hide search suggestions if open (keeps UI tidy)
+        const suggestionsBox = document.getElementById('search-suggestions');
+        if (suggestionsBox && !suggestionsBox.classList.contains('hidden')) {
+            suggestionsBox.classList.add('hidden');
+            suggestionsBox.innerHTML = '';
+        }
+    } catch (error) {
+        console.error('Error clearing cart:', error);
     }
 };
 
@@ -170,169 +277,107 @@ LumeTerminal.actions.completeTransaction = function() {
 // ============================================
 
 /**
- * Scanner module using Web APIs
- * 
- * Technical decisions:
- * - MediaDevices API for camera access
- * - Simulated barcode scanning (real implementation would use ML library)
- * - Web Audio API for beep feedback (no external audio files needed)
- * - Support for front/back camera switching
+ * Scanner module: real barcode scanning via html5-qrcode
+ * - Full-screen modal with green focus frame
+ * - Sidebar closes when scanner opens
+ * - Add to cart only when a barcode is decoded (no random items)
+ * - Done button at bottom to close
  */
 const scannerActions = {
-    scanInterval: null,
-    stream: null,
-    currentFacingMode: 'environment', // 'environment' = back camera, 'user' = front camera
+    html5QrCode: null,
+    lastScannedAt: 0,
+    scanCooldownMs: 1800,
+    currentFacingMode: 'environment',
 
-    /**
-     * Open camera and start scanning
-     * 
-     * Challenges solved:
-     * - Handle permission denials gracefully
-     * - Stop previous stream before starting new one (prevents memory leaks)
-     * - Use 'playsinline' attribute for iOS compatibility
-     */
+    beep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 800;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.12);
+        } catch (_) {}
+    },
+
+    findProductByBarcode(decodedText) {
+        const t = String(decodedText || '').trim();
+        if (!t) return null;
+        const inv = LumeTerminal.state.inventory || [];
+        return inv.find(item => (item.barcode && String(item.barcode) === t) || String(item.id) === t) || null;
+    },
+
     async openScanner() {
-        const video = document.getElementById('video-feed');
         const cameraUI = document.getElementById('camera-module');
-        
-        // Null checks for DOM elements
-        if (!video || !cameraUI) {
+        const readerEl = document.getElementById('barcode-reader');
+        const closeBtn = document.getElementById('scanner-close-btn');
+
+        if (!cameraUI || !readerEl) {
             console.error('Scanner UI elements not found');
             return;
         }
-        
-        // Stop existing stream to prevent multiple camera instances
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-        }
 
-        try {
-            // Request camera with HD resolution and specified facing mode
-            const constraints = { 
-                video: { 
-                    facingMode: this.currentFacingMode,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                } 
-            };
+        document.body.classList.remove('sidebar-open', 'cart-open');
+        cameraUI.classList.remove('hidden');
+        LumeTerminal.actions.isScanning = true;
 
-            this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = this.stream;
-            video.setAttribute("playsinline", true); // Critical for iOS Safari
-            video.play();
+        if (LumeTerminal.ui?.rememberFocus) LumeTerminal.ui.rememberFocus('scanner');
+        queueMicrotask(() => { if (closeBtn) closeBtn.focus(); else cameraUI.focus(); });
 
-            cameraUI.classList.remove('hidden');
-            LumeTerminal.actions.isScanning = true;
-
-            // Start simulated scanning loop
-            if (!this.scanInterval) {
-                this.startScanningLoop();
-            }
-        } catch (err) { 
-            // Handle permission denial or camera unavailable
-            alert("Camera Access Error: " + err.message); 
-        }
-    },
-
-    /**
-     * Toggle between front and back camera
-     * 
-     * Implementation: Restart scanner with new facing mode
-     */
-    switchCamera() {
-        this.currentFacingMode = (this.currentFacingMode === "environment") ? "user" : "environment";
-        this.openScanner(); // Re-initialize with new camera
-    },
-
-    /**
-     * Simulated barcode scanning loop
-     * 
-     * NOTE: Real implementation would use:
-     * - ML library (e.g., ZXing, Quagga.js) for actual barcode detection
-     * - Canvas element to capture video frames
-     * - Image processing to detect barcode patterns
-     * 
-     * Current implementation: Random item selection every 2.5s for demo purposes
-     * 
-     * Audio feedback: Web Audio API (no external files needed)
-     * - Creates sine wave oscillator at 800Hz
-     * - 0.1s duration with exponential fade-out
-     * - Fallback: Silent fail if AudioContext unavailable
-     */
-    startScanningLoop() {
-        this.scanInterval = setInterval(() => {
-            if (!LumeTerminal.actions.isScanning) return;
-
-            const inventory = LumeTerminal.state.inventory;
-            if (!inventory || inventory.length === 0) return;
-
-            // Simulate barcode scan: pick random item
-            const randomItem = inventory[Math.floor(Math.random() * inventory.length)];
-            LumeTerminal.actions.addToCart(randomItem.id);
-
-            // Generate beep sound using Web Audio API (no external files)
+        if (typeof Html5Qrcode !== 'undefined') {
             try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                if (this.html5QrCode && this.html5QrCode.isScanning) {
+                    await this.html5QrCode.stop();
+                }
+                if (!this.html5QrCode) this.html5QrCode = new Html5Qrcode('barcode-reader');
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-
-                oscillator.frequency.value = 800; // 800Hz frequency
-                oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.1);
-            } catch (e) {
-                // Silent fail if audio unavailable (e.g., unsupported browser)
-                console.warn('Audio playback not available');
+                const self = this;
+                await this.html5QrCode.start(
+                    { facingMode: this.currentFacingMode },
+                    { fps: 8, qrbox: { width: 220, height: 120 } },
+                    (decodedText) => {
+                        if (!LumeTerminal.actions.isScanning) return;
+                        const now = Date.now();
+                        if (now - self.lastScannedAt < self.scanCooldownMs) return;
+                        const product = self.findProductByBarcode(decodedText);
+                        if (product) {
+                            self.lastScannedAt = now;
+                            LumeTerminal.actions.addToCart(product.id);
+                            self.beep();
+                            const counter = document.getElementById('scan-counter');
+                            if (counter) counter.textContent = 'In cart: ' + (LumeTerminal.state.cart.reduce((s, i) => s + i.quantity, 0));
+                        }
+                    },
+                    () => {}
+                );
+            } catch (err) {
+                alert('Camera error: ' + (err.message || err));
+                LumeTerminal.actions.finishScanning();
             }
-
-            // Visual feedback: flash counter
-            const counter = document.getElementById('scan-counter');
-            if (counter) {
-                counter.innerText = "Items in cart: " + LumeTerminal.state.cart.length;
-                counter.classList.add('scan-counter-active');
-                setTimeout(() => {
-                    counter.classList.remove('scan-counter-active');
-                }, 200);
-            }
-        }, 2500); // Scan every 2.5 seconds
+        } else {
+            alert('Barcode scanner library not loaded.');
+            LumeTerminal.actions.finishScanning();
+        }
     },
 
-    /**
-     * Clean up scanner resources
-     * 
-     * Critical for performance:
-     * - Clear interval to stop scanning loop
-     * - Stop media stream tracks to release camera
-     * - Remove video source to free memory
-     */
-    finishScanning() {
-        LumeTerminal.actions.isScanning = false; 
-        
-        // Stop scanning loop
-        if (this.scanInterval) {
-            clearInterval(this.scanInterval);
-            this.scanInterval = null;
+    switchCamera() {
+        this.currentFacingMode = this.currentFacingMode === 'environment' ? 'user' : 'environment';
+        this.openScanner();
+    },
+
+    async finishScanning() {
+        LumeTerminal.actions.isScanning = false;
+        if (this.html5QrCode && this.html5QrCode.isScanning) {
+            try { await this.html5QrCode.stop(); } catch (_) {}
         }
-        
-        // Release camera hardware
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-            this.stream = null;
-        }
-        
-        // Clear video element
-        const video = document.getElementById('video-feed');
-        if (video) video.srcObject = null;
-        
-        // Hide camera UI
         const cameraUI = document.getElementById('camera-module');
         if (cameraUI) cameraUI.classList.add('hidden');
+        if (LumeTerminal.ui?.restoreFocus) LumeTerminal.ui.restoreFocus('scanner');
     }
 };
 
@@ -350,21 +395,27 @@ const scannerActions = {
  */
 LumeTerminal.actions.closeAll = function() {
     try {
+        const wasCartOpen = document.body.classList.contains('cart-open');
         // Remove CSS classes that control panel visibility
-        document.body.classList.remove('sidebar-open', 'cart-open');
+        document.body.classList.remove('sidebar-open');
+
+        // Close cart via UI helper (handles focus + hidden class)
+        if (wasCartOpen && LumeTerminal.ui && typeof LumeTerminal.ui.toggleCart === 'function') {
+            LumeTerminal.ui.toggleCart();
+        } else {
+            document.body.classList.remove('cart-open');
+        }
 
         // Stop scanner if active
         if (LumeTerminal.actions.isScanning) {
             scannerActions.finishScanning();
         }
 
-        // Delay cart hide to allow CSS transition to complete
+        // Ensure cart panel is hidden if not open (fallback)
         setTimeout(() => {
             const cartPanel = document.getElementById('cart-panel');
-            if (cartPanel && !document.body.classList.contains('cart-open')) {
-                cartPanel.classList.add('hidden');
-            }
-        }, 500); // Match CSS transition duration
+            if (cartPanel && !document.body.classList.contains('cart-open')) cartPanel.classList.add('hidden');
+        }, 550);
     } catch (error) {
         console.error('Error closing all panels:', error);
     }
@@ -382,7 +433,15 @@ Object.assign(LumeTerminal.actions, scannerActions);
  * Improves UX: users expect ESC to close overlays
  */
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') LumeTerminal.actions.closeAll();
+    if (e.key === 'Escape') {
+        // Hide search suggestions even when no panels are open
+        const suggestionsBox = document.getElementById('search-suggestions');
+        if (suggestionsBox && !suggestionsBox.classList.contains('hidden')) {
+            suggestionsBox.classList.add('hidden');
+            suggestionsBox.innerHTML = '';
+        }
+        LumeTerminal.actions.closeAll();
+    }
 });
 
 /**
@@ -394,6 +453,18 @@ document.addEventListener('keydown', (e) => {
  * - Prevents accidental closes when clicking panel content
  */
 document.addEventListener('mousedown', (e) => {
+    // Search suggestions: click-outside should hide dropdown
+    const suggestionsBox = document.getElementById('search-suggestions');
+    const searchInput = document.getElementById('inventory-search');
+    if (suggestionsBox && searchInput && !suggestionsBox.classList.contains('hidden')) {
+        const clickedInsideSuggestions = suggestionsBox.contains(e.target);
+        const clickedInsideInput = searchInput.contains(e.target);
+        if (!clickedInsideSuggestions && !clickedInsideInput) {
+            suggestionsBox.classList.add('hidden');
+            suggestionsBox.innerHTML = '';
+        }
+    }
+
     const cart = document.getElementById('cart-panel');
     const sidebar = document.querySelector('.sidebar');
     const burger = document.querySelector('.burger-btn');

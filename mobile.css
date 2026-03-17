@@ -120,12 +120,34 @@ body:not(.app-active).sidebar-open::after {
         min-width: 5rem !important;
         border-radius: 0.5rem !important;
         overflow: hidden !important;
-        transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+        transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out, opacity 0.3s ease-in-out !important;
     }
-    .btn-sell:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
-      
+    @media (hover: hover) and (pointer: fine) {
+        .btn-sell:hover {
+            transform: translateY(-2px) !important;
+            background: #222 !important;
+            box-shadow: 0 10px 18px rgba(0,0,0,0.22) !important;
+        }
+    }
+
+    .btn-sell:active {
+        transform: translateY(0) !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.16) !important;
+        opacity: 0.92 !important;
+    }
+
+    .btn-sell:focus,
+    .btn-sell:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    #inventory-search:focus,
+    #inventory-search:focus-visible,
+    .search-input:focus,
+    .search-input:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
     }
     #cart-trigger, .burger-btn {
         padding: 0.5rem !important;
@@ -134,6 +156,15 @@ body:not(.app-active).sidebar-open::after {
         justify-content: center;
         border-radius: 0.5rem !important;
 
+    }
+
+    .sync-toast {
+        bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px)) !important;
+        width: calc(100% - 1.25rem) !important;
+        max-width: 26rem !important;
+        text-align: center !important;
+        font-size: 0.72rem !important;
+        letter-spacing: 0.07rem !important;
     }
 
     #cart-panel {
@@ -155,10 +186,56 @@ body:not(.app-active).sidebar-open::after {
         width: 90% !important;
     }
 
+    .btn-clear-cart {
+        margin-top: 0.625rem !important;
+        display: inline-flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: auto !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.75rem !important;
+        letter-spacing: 0.12rem !important;
+        text-transform: uppercase !important;
+        color: var(--grey-text) !important;
+        font-weight: 600 !important;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out !important;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .btn-clear-cart:hover {
+            opacity: 1 !important;
+            transform: translateY(-1px) !important;
+            color: #111 !important;
+        }
+    }
+
+    .btn-clear-cart:active {
+        transform: translateY(0) !important;
+        opacity: 0.85 !important;
+    }
+
     .content-module { 
         display: block;
         text-align: center;
         justify-content: center;
+    }
+
+    .transaction-details {
+        padding: 0.875rem 1.125rem 1rem !important;
+        border-radius: 1rem !important;
+    }
+
+    .tx-item {
+        grid-template-columns: 3rem 1fr !important;
+        gap: 0.625rem !important;
+    }
+
+    .tx-item-img {
+        width: 3rem !important;
+        height: 3rem !important;
+        border-radius: 0.5rem !important;
     }
 
     .module-header h2 {
@@ -168,6 +245,28 @@ body:not(.app-active).sidebar-open::after {
         width: 100%;
         display: block;
     }
+
+    .analytics-range {
+        width: 100% !important;
+        justify-content: center !important;
+        border-radius: 1rem !important;
+        padding: 0.625rem 0.75rem !important;
+        gap: 0.625rem !important;
+    }
+    .analytics-range-user { display: none !important; }
+    .analytics-range-presets {
+        border-right: none !important;
+        padding-right: 0 !important;
+        margin-right: 0 !important;
+    }
+    .analytics-preset { padding: 0.3rem 0.45rem !important; }
+    .analytics-range-input { font-size: 0.8rem !important; }
+
+    .analytics-controls { width: 100% !important; justify-content: center !important; flex-wrap: wrap !important; gap: 0.5rem !important; margin-top: 0.625rem !important; }
+    .analytics-user-pill { display: none !important; }
+    .analytics-range-trigger { width: 100% !important; text-align: center !important; }
+    .analytics-range-popover { right: 50% !important; transform: translateX(50%) !important; width: calc(100vw - 1.25rem) !important; max-width: 24rem !important; }
+    .analytics-user-popover { right: 50% !important; transform: translateX(50%) !important; width: calc(100vw - 1.25rem) !important; max-width: 24rem !important; }
     
     .analytics-grid { grid-template-columns: 1fr !important; }
     .kpi-value { font-size: 1.8rem !important; }
@@ -181,6 +280,11 @@ body:not(.app-active).sidebar-open::after {
     .product-card:active {
         opacity: 0.7 !important;
     }
+
+    #camera-module { z-index: 5000 !important; }
+    .camera-focus-frame { width: 12rem !important; height: 7rem !important; }
+    .scanner-footer { flex-wrap: wrap; padding: 0.75rem 1rem !important; gap: 0.5rem !important; }
+    .scanner-done-btn { padding: 0.6rem 1.25rem !important; font-size: 0.85rem !important; }
 }
 
 /* TABLET - 30.0625rem до 47.9375rem */
