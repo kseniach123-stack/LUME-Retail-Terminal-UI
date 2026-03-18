@@ -2,6 +2,7 @@ const INVENTORY_CACHE_KEY = 'lume_inventory_cache_v1';
 const SALES_KEY = 'lume_vault';
 const OUTBOX_KEY = 'lume_outbox_v1';
 const LAST_SYNC_KEY = 'lume_last_sync_v1';
+const DEVICE_ID_KEY = 'lume_device_id_v1';
 
 const defaultInventory = [
     { id: 1, name: "Eau de toilette", price: 160.00, img: "https://images.unsplash.com/photo-1606334585230-3ba76447cdbd?q=80&w=863&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", barcode: "1001" },
@@ -33,6 +34,18 @@ function getOutbox() {
 
 function setOutbox(outbox) {
     localStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox));
+}
+
+function getDeviceId() {
+    const existing = localStorage.getItem(DEVICE_ID_KEY);
+    if (existing && String(existing).trim().length) return String(existing).trim();
+
+    const id = (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+        ? globalThis.crypto.randomUUID()
+        : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+    localStorage.setItem(DEVICE_ID_KEY, id);
+    return id;
 }
 
 function updateSyncStatusUI() {
@@ -92,6 +105,7 @@ function flushOutboxToLocalSales() {
 
 const LumeTerminal = {
     state: {
+        deviceId: getDeviceId(),
         inventory: loadInventory(),
         cart: [],
         sales: safeJsonParse(localStorage.getItem(SALES_KEY), []) || [],
@@ -101,6 +115,22 @@ const LumeTerminal = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Legacy migration: ensure old records have deviceId for correct scoping.
+    try {
+        if (Array.isArray(LumeTerminal.state.sales) && LumeTerminal.state.sales.length) {
+            const deviceId = LumeTerminal.state.deviceId;
+            const needs = LumeTerminal.state.sales.some(s => !s || !s.deviceId);
+            if (needs) {
+                const migrated = LumeTerminal.state.sales.map(s => ({
+                    ...s,
+                    deviceId: s?.deviceId ? s.deviceId : deviceId
+                }));
+                LumeTerminal.state.sales = migrated;
+                localStorage.setItem(SALES_KEY, JSON.stringify(migrated));
+            }
+        }
+    } catch (_) {}
+
     // Connectivity indicator + demo sync behavior
     updateSyncStatusUI();
     window.addEventListener('online', () => {
