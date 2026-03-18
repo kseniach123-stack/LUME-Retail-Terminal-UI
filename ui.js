@@ -264,8 +264,25 @@ LumeTerminal.ui = {
         };
 
         const renderUsers = () => {
+            const deviceId = String(LumeTerminal.state?.deviceId || '');
             const sales = Array.isArray(LumeTerminal.state.sales) ? LumeTerminal.state.sales : [];
-            const users = Array.from(new Set(sales.map(s => String(s?.user || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+
+            // Keep picker scoped to this device AND current date filters.
+            const from = this.filters.from ? Date.parse(this.filters.from) : null;
+            const to = this.filters.to ? Date.parse(this.filters.to) : null;
+            const toEnd = (to != null) ? (to + 24 * 60 * 60 * 1000 - 1) : null;
+
+            const scoped = sales.filter(s => String(s?.deviceId || '') === deviceId);
+            const withinRange = scoped.filter(s => {
+                const ts = this.parseTxTime(s);
+                if (from != null && ts < from) return false;
+                if (toEnd != null && ts > toEnd) return false;
+                return true;
+            });
+
+            const users = Array.from(
+                new Set(withinRange.map(s => String(s?.user || '').trim()).filter(Boolean))
+            ).sort((a, b) => a.localeCompare(b));
             const current = this.analytics.selectedUser || this.auth.getCurrentUser();
 
             if (userEl) userEl.textContent = current || '—';
@@ -323,7 +340,11 @@ LumeTerminal.ui = {
     getFilteredSalesForAnalytics() {
         const username = this.analytics.selectedUser || this.auth.getCurrentUser();
         const sales = Array.isArray(LumeTerminal.state.sales) ? LumeTerminal.state.sales : [];
-        const mine = sales.filter(s => (s?.user || '') === username);
+        const deviceId = String(LumeTerminal.state?.deviceId || '');
+        const mine = sales.filter(s =>
+            (s?.user || '') === username &&
+            String(s?.deviceId || '') === deviceId
+        );
 
         const from = this.filters.from ? Date.parse(this.filters.from) : null;
         const to = this.filters.to ? Date.parse(this.filters.to) : null;
@@ -341,7 +362,11 @@ LumeTerminal.ui = {
         // Transactions should always show only the logged-in user's activity
         const username = this.auth.getCurrentUser();
         const sales = Array.isArray(LumeTerminal.state.sales) ? LumeTerminal.state.sales : [];
-        const mine = sales.filter(s => (s?.user || '') === username);
+        const deviceId = String(LumeTerminal.state?.deviceId || '');
+        const mine = sales.filter(s =>
+            (s?.user || '') === username &&
+            String(s?.deviceId || '') === deviceId
+        );
 
         const from = this.filters.from ? Date.parse(this.filters.from) : null;
         const to = this.filters.to ? Date.parse(this.filters.to) : null;

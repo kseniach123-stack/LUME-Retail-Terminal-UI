@@ -189,6 +189,7 @@ LumeTerminal.actions.completeTransaction = function() {
             price: total,
             time: new Date().toLocaleTimeString(),
             date: new Date().toLocaleDateString(),
+            deviceId: String(LumeTerminal.state?.deviceId || ''),
             syncStatus: navigator.onLine ? 'synced' : 'pending',
             items: itemsSnapshot
         };
@@ -206,7 +207,7 @@ LumeTerminal.actions.completeTransaction = function() {
                 ? safeJsonParse(localStorage.getItem(outboxKey), [])
                 : (JSON.parse(localStorage.getItem(outboxKey) || '[]'));
             const outbox = Array.isArray(existing) ? existing : [];
-            outbox.push({ id: transaction.id, createdAt: new Date().toISOString() });
+            outbox.push({ id: transaction.id, createdAt: new Date().toISOString(), deviceId: transaction.deviceId });
             localStorage.setItem(outboxKey, JSON.stringify(outbox));
         } else {
             // If online, mark last sync moment for UI
