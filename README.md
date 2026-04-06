@@ -127,13 +127,13 @@ Typical flow:
 2. Upload **`dist/`** contents (or connect the Git repo) to a static host, for example:
    - [Netlify](https://www.netlify.com/) — drag-and-drop `dist` or link GitHub; set **publish directory** to `dist`, **build command** `npm run build`.
    - [Cloudflare Pages](https://pages.cloudflare.com/) — same idea: build `npm run build`, output `dist`.
-   - [GitHub Pages](https://pages.github.com/) — build in Actions, deploy `dist` to `gh-pages` (may need `base` in `vite.config.js` if the site is not at domain root).
+   - **GitHub Pages (this repo):** use **GitHub Actions**, not the raw repo files. In the repo go to **Settings → Pages → Build and deployment → Source: GitHub Actions**. Workflow **Deploy GitHub Pages** (`.github/workflows/pages.yml`) runs `npm run build` and publishes **`dist/`** only. If you publish the branch root or `docs` with the **source** `index.html`, the browser will request `src/main.js` and get **404** — there is no bundled JS until you deploy **`dist`**.
 
 3. Ensure the site is served over **HTTPS** (hosts above do this by default) so camera / PWA features behave consistently.
 
 ## Project structure
 
-- `index.html` — layout and UI containers; loads `/src/main.js`
+- `index.html` — layout; dev entry `./src/main.js` (production build replaces with `./assets/*.js`)
 - `vite.config.js` — Vite + PWA plugin
 - `src/main.js` — entry: CSS, PWA `registerSW`, `window.LumeTerminal`, `initApp`
 - `src/config.js` — `VITE_API_BASE_URL` helper
@@ -145,6 +145,7 @@ Typical flow:
 - `public/favicon.svg` — favicon served at `/favicon.svg`
 - `e2e/` — Playwright specs
 - `.github/workflows/ci.yml` — CI: lint + E2E on push/PR
+- `.github/workflows/pages.yml` — deploy **`dist/`** to GitHub Pages (enable in repo Settings)
 - `eslint.config.js`, `.prettierrc` — lint/format
 
 ## Developer notes / limitations
