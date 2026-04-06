@@ -3,6 +3,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   root: '.',
+  /** Relative URLs so the app + favicon work on GitHub Pages (`/repo/`) and at domain root. */
+  base: './',
   publicDir: 'public',
   server: {
     host: '127.0.0.1',
@@ -31,10 +33,10 @@ export default defineConfig({
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/',
+        start_url: './',
         icons: [
           {
-            src: '/favicon.svg',
+            src: 'favicon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable',
