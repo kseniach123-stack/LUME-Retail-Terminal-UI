@@ -18,6 +18,10 @@ body:not(.app-active).sidebar-open::after {
     position: relative;
 }
 @media (max-width: 480px) {
+            .stage {
+                padding: 0.5rem 0.75rem calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
+                -webkit-overflow-scrolling: touch;
+            }
             .topbar {
                 align-items: center;
             }
@@ -78,9 +82,11 @@ body:not(.app-active).sidebar-open::after {
     }
 
     .search-bar-container { 
-        width: 95% !important; 
-        margin: 1.25rem auto 1.875rem !important; 
-        float: none !important; 
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0.5rem 0 1rem !important;
+        float: none !important;
+        box-sizing: border-box;
     }
 
     .search-input { 

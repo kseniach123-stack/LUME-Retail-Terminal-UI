@@ -1,3 +1,14 @@
+import { LumeTerminal, SALES_KEY } from './app.js';
+import { showToast } from './toast.js';
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 // ============================================
 // UI RENDERING MODULE
 // ============================================
@@ -54,6 +65,8 @@ LumeTerminal.ui = {
      * No actual auth backend - just visual gate for demo
      */
     init() {
+        this.initClearCartModal();
+
         const authForm = document.getElementById('auth-form');
         if (authForm) {
             authForm.onsubmit = (e) => {
@@ -72,7 +85,7 @@ LumeTerminal.ui = {
                         if (!hasAnyUser) {
                             const migrated = sales.map(s => ({ ...s, user: username }));
                             LumeTerminal.state.sales = migrated;
-                            localStorage.setItem((typeof SALES_KEY !== 'undefined') ? SALES_KEY : 'lume_vault', JSON.stringify(migrated));
+                            localStorage.setItem(SALES_KEY, JSON.stringify(migrated));
                         }
                     }
                 } catch (_) {}
@@ -86,12 +99,50 @@ LumeTerminal.ui = {
                 this.initAnalyticsUserPickerUI();
 
                 // Initial render of all sections
-                this.renderGrid(LumeTerminal.state.inventory);
-                this.updateCartUI(); 
+                this.refreshDashboardGrid();
+                this.initSearchKeyboard();
+                this.updateCartUI();
                 this.renderOperations();
-                this.renderAnalytics(); 
+                this.renderAnalytics();
             };
         }
+    },
+
+    initClearCartModal() {
+        const modal = document.getElementById('clear-cart-modal');
+        if (!modal || modal.dataset.lumeBound === '1') return;
+        modal.dataset.lumeBound = '1';
+
+        const close = () => this.closeClearCartModal();
+        const cancel = document.getElementById('clear-cart-cancel');
+        const confirm = document.getElementById('clear-cart-confirm');
+        if (cancel) cancel.onclick = close;
+        if (confirm) {
+            confirm.onclick = () => {
+                close();
+                LumeTerminal.actions.clearCart();
+            };
+        }
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
+    },
+
+    promptClearCart() {
+        if (!Array.isArray(LumeTerminal.state.cart) || LumeTerminal.state.cart.length === 0) {
+            showToast('Cart is already empty.', { variant: 'info' });
+            return;
+        }
+        const modal = document.getElementById('clear-cart-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const confirmBtn = document.getElementById('clear-cart-confirm');
+        queueMicrotask(() => confirmBtn?.focus());
+    },
+
+    closeClearCartModal() {
+        const modal = document.getElementById('clear-cart-modal');
+        if (modal) modal.classList.add('hidden');
     },
 
     initAnalyticsRangeUI() {
@@ -462,26 +513,105 @@ LumeTerminal.ui = {
         // Lazy render: only update data when tab becomes visible
         if(tabId === 'analytics') this.renderAnalytics();
         if(tabId === 'operations') this.renderOperations();
-        if(tabId === 'dashboard') this.renderGrid(LumeTerminal.state.inventory);
+        if(tabId === 'dashboard') this.refreshDashboardGrid();
+    },
+
+    refreshDashboardGrid() {
+        const q = (LumeTerminal.state.dashboardSearchQuery || '').trim().toLowerCase();
+        const inv = LumeTerminal.state.inventory || [];
+        if (!q) {
+            this.renderGrid(inv);
+            return;
+        }
+        const filtered = inv.filter(i => i.name.toLowerCase().includes(q));
+        if (!filtered.length) {
+            this.renderGrid([], { emptySearch: true, query: LumeTerminal.state.dashboardSearchQuery.trim() });
+            return;
+        }
+        this.renderGrid(filtered);
+    },
+
+    initSearchKeyboard() {
+        const input = document.getElementById('inventory-search');
+        if (!input || input.dataset.lumeSearchKb === '1') return;
+        input.dataset.lumeSearchKb = '1';
+
+        const getOptions = () =>
+            Array.from(document.querySelectorAll('#search-suggestions [role="option"][data-item-id]'));
+
+        const setActive = (idx) => {
+            const opts = getOptions();
+            opts.forEach((el, i) => {
+                el.classList.toggle('is-active', i === idx);
+                el.setAttribute('aria-selected', i === idx ? 'true' : 'false');
+            });
+            const inputEl = document.getElementById('inventory-search');
+            if (idx >= 0 && opts[idx]) {
+                inputEl?.setAttribute('aria-activedescendant', opts[idx].id);
+            } else {
+                inputEl?.removeAttribute('aria-activedescendant');
+            }
+            LumeTerminal.actions._searchListActiveIndex = idx;
+        };
+
+        input.addEventListener('keydown', (e) => {
+            const box = document.getElementById('search-suggestions');
+            if (!box || box.classList.contains('hidden')) return;
+            const opts = getOptions();
+            if (!opts.length) return;
+
+            let idx = LumeTerminal.actions._searchListActiveIndex ?? -1;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                idx = Math.min(idx + 1, opts.length - 1);
+                setActive(idx);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                idx = Math.max(idx - 1, -1);
+                setActive(idx);
+            } else if (e.key === 'Enter') {
+                if (idx >= 0 && opts[idx]) {
+                    e.preventDefault();
+                    const id = Number(opts[idx].dataset.itemId);
+                    if (!Number.isNaN(id)) LumeTerminal.actions.selectSuggestion(id);
+                    setActive(-1);
+                }
+            }
+        });
     },
 
     /**
      * Render product grid
      * @param {Array} items - Inventory items to display
-     * 
-     * Performance: Using template literals and join() instead of
-     * creating DOM nodes individually (faster for large lists)
+     * @param {{ emptySearch?: boolean; query?: string }} [opts]
      */
-    renderGrid(items) {
+    renderGrid(items, opts = {}) {
         const container = document.getElementById('grid-container');
-        if (!container) return; 
-        
+        if (!container) return;
+
+        if (opts.emptySearch && opts.query != null) {
+            const safe = escapeHtml(opts.query);
+            container.innerHTML = `
+            <div class="catalog-empty" role="status">
+                <p class="catalog-empty-title">No products match “${safe}”</p>
+                <button type="button" class="catalog-empty-btn" onclick="LumeTerminal.actions.clearDashboardSearch()">Clear search</button>
+            </div>`;
+            return;
+        }
+
+        if (!items.length) {
+            container.innerHTML =
+                '<div class="catalog-empty" role="status"><p class="catalog-empty-title">No products in catalog.</p></div>';
+            return;
+        }
+
         container.innerHTML = items.map(item => `
             <div class="product-card">
                 <img src="${item.img}" alt="${item.name}">
                 <div class="p-name">${item.name}</div>
                 <div class="p-price">£${item.price.toFixed(2)}</div>
-                <button class="btn-sell" onclick="LumeTerminal.actions.addToCart(${item.id}, event)">Add</button>
+                <button type="button" class="btn-sell" onclick="LumeTerminal.actions.addToCart(${item.id}, event)">Add</button>
             </div>
         `).join('');
     },

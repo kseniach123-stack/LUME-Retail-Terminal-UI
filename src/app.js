@@ -1,7 +1,9 @@
-const INVENTORY_CACHE_KEY = 'lume_inventory_cache_v1';
-const SALES_KEY = 'lume_vault';
-const OUTBOX_KEY = 'lume_outbox_v1';
-const LAST_SYNC_KEY = 'lume_last_sync_v1';
+import { apiBaseUrl } from './config.js';
+
+export const INVENTORY_CACHE_KEY = 'lume_inventory_cache_v1';
+export const SALES_KEY = 'lume_vault';
+export const OUTBOX_KEY = 'lume_outbox_v1';
+export const LAST_SYNC_KEY = 'lume_last_sync_v1';
 const DEVICE_ID_KEY = 'lume_device_id_v1';
 
 const defaultInventory = [
@@ -11,7 +13,7 @@ const defaultInventory = [
     { id: 4, name: "Lipstick", price: 31.00, img: "https://images.unsplash.com/photo-1671575212918-0af5f840997a?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", barcode: "1004" }
 ];
 
-function safeJsonParse(value, fallback) {
+export function safeJsonParse(value, fallback) {
     try { return JSON.parse(value); } catch (_) { return fallback; }
 }
 
@@ -48,7 +50,7 @@ function getDeviceId() {
     return id;
 }
 
-function updateSyncStatusUI() {
+export function updateSyncStatusUI() {
     const el = document.getElementById('sync-status');
     if (!el) return;
 
@@ -57,7 +59,6 @@ function updateSyncStatusUI() {
     const pending = outbox.length;
     const lastSync = localStorage.getItem(LAST_SYNC_KEY);
 
-    // Auto-hide timer for "all good" states
     if (!updateSyncStatusUI._hideTimer) updateSyncStatusUI._hideTimer = null;
     if (updateSyncStatusUI._hideTimer) {
         clearTimeout(updateSyncStatusUI._hideTimer);
@@ -85,12 +86,10 @@ function updateSyncStatusUI() {
         return;
     }
 
-    // Keep this subtle and auto-hide (not important to be always visible)
     setState(lastSync ? `Online • synced` : 'Online', 'is-online', { autoHide: true });
 }
 
 function flushOutboxToLocalSales() {
-    // Demo "sync": we don't have a backend, so we mark pending records as synced.
     const outbox = getOutbox();
     if (!outbox.length) return;
 
@@ -103,19 +102,21 @@ function flushOutboxToLocalSales() {
     localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
 }
 
-const LumeTerminal = {
+export const LumeTerminal = {
+    /** Reserved for future HTTP sync (`VITE_API_BASE_URL`). */
+    config: { apiBaseUrl },
     state: {
         deviceId: getDeviceId(),
         inventory: loadInventory(),
         cart: [],
         sales: safeJsonParse(localStorage.getItem(SALES_KEY), []) || [],
-        sessionItems: 0
+        sessionItems: 0,
+        dashboardSearchQuery: '',
     },
     actions: {},
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Legacy migration: ensure old records have deviceId for correct scoping.
+export function initApp() {
     try {
         if (Array.isArray(LumeTerminal.state.sales) && LumeTerminal.state.sales.length) {
             const deviceId = LumeTerminal.state.deviceId;
@@ -131,12 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (_) {}
 
-    // Connectivity indicator + demo sync behavior
     updateSyncStatusUI();
     window.addEventListener('online', () => {
         flushOutboxToLocalSales();
         updateSyncStatusUI();
-        // Keep in-memory state consistent with localStorage after "sync"
         LumeTerminal.state.sales = safeJsonParse(localStorage.getItem(SALES_KEY), []) || [];
         if (LumeTerminal.ui?.renderOperations) LumeTerminal.ui.renderOperations();
         if (LumeTerminal.ui?.renderAnalytics) LumeTerminal.ui.renderAnalytics();
@@ -144,4 +143,4 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('offline', updateSyncStatusUI);
 
     if (LumeTerminal.ui) LumeTerminal.ui.init();
-});
+}

@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LUME | Retail Terminal</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="main.css?v=4">
-    <link rel="stylesheet" href="mobile.css?v=4">
 
     <style>
         .stage, .sidebar, .burger-btn, #cart-trigger, #cart-panel {
@@ -52,18 +50,13 @@
 </head>
 <body>
 
-
-    <button class="burger-btn" onclick="LumeTerminal.ui.toggleMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
-        <span></span><span></span>
-    </button>
-
     <div id="auth-screen" role="dialog" aria-labelledby="auth-title">
         <div class="auth-card">
             <h1 id="auth-title">LUME</h1>
-            <form id="auth-form" aria-label="Login form">
+            <form id="auth-form" data-testid="auth-form" aria-label="Login form">
                 <input id="auth-username" name="username" type="text" class="auth-input" placeholder="USERNAME" required aria-label="Username" autocomplete="username">
                 <input id="auth-password" name="password" type="password" class="auth-input" placeholder="PASSWORD" required aria-label="Password" autocomplete="current-password">
-                <button type="submit" class="btn-login">Login</button>
+                <button type="submit" class="btn-login" data-testid="auth-submit">Login</button>
             </form>
         </div>
     </div>
@@ -110,7 +103,7 @@
                 <span id="cart-total-price" aria-live="polite">£0.00</span>
             </div>
             <button onclick="LumeTerminal.actions.completeTransaction()" class="btn-login btn-finish-transaction" aria-label="Complete transaction and checkout">Finish Transaction</button>
-            <button onclick="LumeTerminal.actions.clearCart()" class="btn-clear-cart" aria-label="Clear all items from cart">Clear Cart</button>
+            <button type="button" onclick="LumeTerminal.ui.promptClearCart()" class="btn-clear-cart" aria-label="Clear all items from cart">Clear Cart</button>
         </div>
     </div>
             <section id="sec-dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
@@ -215,9 +208,17 @@
 
     <div id="sync-status" class="sync-toast hidden" role="status" aria-live="polite" aria-label="Connectivity status"></div>
 
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="app.js?v=4"></script>
-    <script src="ui.js?v=4"></script>
-    <script src="actions.js?v=4"></script>
+    <div id="clear-cart-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="clear-cart-title" aria-describedby="clear-cart-desc">
+        <div class="modal-card" role="document">
+            <h3 id="clear-cart-title" class="modal-title">Clear cart?</h3>
+            <p id="clear-cart-desc" class="modal-desc">All items will be removed from the current cart.</p>
+            <div class="modal-actions">
+                <button type="button" id="clear-cart-cancel" class="modal-btn modal-btn--ghost">Cancel</button>
+                <button type="button" id="clear-cart-confirm" class="modal-btn modal-btn--danger">Clear cart</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>

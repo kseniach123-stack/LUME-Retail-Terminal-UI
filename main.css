@@ -103,7 +103,7 @@ button:focus-visible, input:focus-visible, [role="tab"]:focus-visible { outline:
 /* HAMBURGER */
 .burger-btn { position: fixed; top: 1.875rem; left: 1.875rem; z-index: 1100; background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 0.5rem; opacity: 0; pointer-events: none; transition: 0.4s; }
 .burger-btn span { width: 1.5625rem; height: 0.0625rem; background: #000; transition: 0.4s; }
-#terminal-app:not(.hidden) ~ .burger-btn, .app-active .burger-btn { opacity: 1; pointer-events: auto; }
+.app-active .burger-btn { opacity: 1; pointer-events: auto; }
 .sidebar-open .burger-btn span { background: #fff; }
 .sidebar-open .burger-btn span:first-child { transform: translateY(0.2812rem) rotate(45deg); }
 .sidebar-open .burger-btn span:last-child { transform: translateY(-0.2812rem) rotate(-45deg); }
@@ -152,6 +152,35 @@ button:focus-visible, input:focus-visible, [role="tab"]:focus-visible { outline:
 #cart-trigger span { font-size: 0.7rem; letter-spacing: 0.125rem; font-weight: 700; text-transform: uppercase; }
 #cart-count-badge { width: 1.5rem; height: 1.5rem; background: #000; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; }
 
+/* Top bar: burger + cart were position:fixed, so they left the row empty (~16px padding only). Keep them in flow on all viewports. */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    min-height: 2.75rem;
+    margin-bottom: 0.25rem;
+}
+.topbar .burger-btn {
+    position: relative;
+    top: auto;
+    left: auto;
+    z-index: 1;
+    flex-shrink: 0;
+}
+.topbar #cart-trigger {
+    position: relative;
+    top: auto;
+    right: auto;
+    z-index: 1;
+    margin-left: auto;
+    flex-shrink: 0;
+    background: #fff;
+}
+
 /* SYNC / OFFLINE TOAST */
 .sync-toast {
     position: fixed;
@@ -188,6 +217,99 @@ button:focus-visible, input:focus-visible, [role="tab"]:focus-visible { outline:
 .sync-toast.is-online {
     background: rgba(255,255,255,0.92);
     color: rgba(0,0,0,0.7);
+}
+
+/* App toasts (replacements for alert) */
+.app-toast-stack {
+    position: fixed;
+    top: calc(1rem + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: min(92vw, 24rem);
+    pointer-events: none;
+}
+.app-toast {
+    pointer-events: auto;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    padding: 0.65rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    opacity: 0;
+    transform: translateY(-0.5rem);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    cursor: pointer;
+    text-align: center;
+}
+.app-toast--visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.app-toast--info {
+    background: rgba(255,255,255,0.96);
+    color: #222;
+    backdrop-filter: blur(10px);
+}
+.app-toast--success {
+    background: rgba(22, 101, 52, 0.95);
+    color: #fff;
+    border-color: rgba(255,255,255,0.2);
+}
+.app-toast--error {
+    background: rgba(127, 29, 29, 0.95);
+    color: #fff;
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* Catalog empty state (search / no products) */
+.catalog-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--grey-text);
+}
+.catalog-empty-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    letter-spacing: 0.04em;
+}
+.catalog-empty-btn {
+    font-size: 0.7rem;
+    letter-spacing: 0.12rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: 1px solid #111;
+    background: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+@media (hover: hover) {
+    .catalog-empty-btn:hover {
+        background: #111;
+        color: #fff;
+    }
+}
+
+/* Search suggestion keyboard highlight */
+.suggestion-item.is-active {
+    outline: 2px solid #111;
+    outline-offset: -2px;
+}
+.suggestion-item--empty {
+    padding: 15px;
+    color: #888;
+    font-size: 0.8rem;
+    cursor: default;
+    pointer-events: none;
 }
 #cart-panel { position: fixed !important; top: 0 !important; right: -25rem !important; left: auto !important; width: 23.75rem !important; min-width: 23.75rem !important; max-width: 23.75rem !important; height: 100vh !important; background: #ffffff !important; z-index: 3000 !important; box-shadow: -1.25rem 0 3.125rem rgba(0, 0, 0, 0.1) !important; transition: right 0.5s cubic-bezier(0.77, 0, 0.175, 1) !important; display: flex !important; flex-direction: column !important; }
 body.cart-open #cart-panel { right: 0 !important; }
@@ -513,6 +635,89 @@ body.cart-open #cart-panel { right: 0 !important; }
     border-radius: 0.5rem;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.22s ease;
+}
+/* Mouse / trackpad: show scan frame only when hovering the camera area (no focus trap). */
+@media (hover: hover) and (pointer: fine) {
+    .scanner-viewport:hover .camera-focus-frame {
+        opacity: 1;
+    }
+}
+/* Touch / coarse pointer: frame stays visible (no hover). */
+@media (hover: none), (pointer: coarse) {
+    .camera-focus-frame {
+        opacity: 1;
+    }
+}
+
+/* Clear cart confirmation (no focus trap — only optional initial focus on open) */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+}
+.modal-overlay.hidden {
+    display: none;
+}
+.modal-card {
+    width: 100%;
+    max-width: 22rem;
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem 1.5rem 1.25rem;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+}
+.modal-title {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.modal-desc {
+    margin: 0 0 1.25rem;
+    font-size: 0.85rem;
+    color: var(--grey-text);
+    line-height: 1.45;
+}
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+.modal-btn {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    border: 1px solid #111;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.modal-btn--ghost {
+    background: #fff;
+    color: #111;
+}
+.modal-btn--ghost:hover {
+    background: #f3f3f3;
+}
+.modal-btn--danger {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+.modal-btn--danger:hover {
+    background: #333;
 }
 
 .scanner-footer {

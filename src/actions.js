@@ -1,9 +1,21 @@
+import { Html5Qrcode } from 'html5-qrcode';
+import {
+    LumeTerminal,
+    SALES_KEY,
+    OUTBOX_KEY,
+    LAST_SYNC_KEY,
+    safeJsonParse,
+    updateSyncStatusUI,
+} from './app.js';
+import { showToast } from './toast.js';
+
 // ============================================
 // CART MANAGEMENT
 // ============================================
 
 // Track scanner state globally to prevent duplicate scans
 LumeTerminal.actions.isScanning = false;
+LumeTerminal.actions._searchListActiveIndex = -1;
 
 /**
  * Add item to shopping cart
@@ -81,32 +93,40 @@ LumeTerminal.actions.addToCart = function(itemId, evt) {
  */
 LumeTerminal.actions.search = function(query) {
     const suggestionsBox = document.getElementById('search-suggestions');
-    
-    // Null check for DOM element
+    const input = document.getElementById('inventory-search');
+
     if (!suggestionsBox) {
         console.warn('Search suggestions box not found');
         return;
     }
-    
-    const searchTerm = query.toLowerCase().trim();
 
-    // Hide suggestions if search is empty
+    LumeTerminal.actions._searchListActiveIndex = -1;
+    if (input) input.removeAttribute('aria-activedescendant');
+
+    const searchTerm = query.toLowerCase().trim();
+    LumeTerminal.state.dashboardSearchQuery = searchTerm;
+    if (LumeTerminal.ui?.refreshDashboardGrid) {
+        LumeTerminal.ui.refreshDashboardGrid();
+    }
+
     if (searchTerm.length === 0) {
         suggestionsBox.classList.add('hidden');
         suggestionsBox.innerHTML = '';
         return;
     }
 
-    // Filter inventory by partial name match
     const matches = LumeTerminal.state.inventory.filter(item =>
         item.name.toLowerCase().includes(searchTerm)
     );
 
     if (matches.length > 0) {
-        // Show dropdown with matching products
         suggestionsBox.classList.remove('hidden');
-        suggestionsBox.innerHTML = matches.map(item => `
+        suggestionsBox.innerHTML = matches.map((item, i) => `
             <div class="suggestion-item"
+                 role="option"
+                 id="search-opt-${i}"
+                 data-item-id="${item.id}"
+                 aria-selected="false"
                  onclick="LumeTerminal.actions.selectSuggestion(${item.id})">
                 <img src="${item.img}" alt="${item.name}">
                 <div class="suggestion-item-content">
@@ -117,8 +137,8 @@ LumeTerminal.actions.search = function(query) {
             </div>
         `).join('');
     } else {
-        // Show "no results" message
-        suggestionsBox.innerHTML = '<div style="padding: 15px; color: #888; font-size: 0.8rem;">No products found</div>';
+        suggestionsBox.innerHTML =
+            '<div class="suggestion-item suggestion-item--empty" role="status">No products found</div>';
         suggestionsBox.classList.remove('hidden');
     }
 };
@@ -131,14 +151,40 @@ LumeTerminal.actions.selectSuggestion = function(itemId) {
     try {
         LumeTerminal.actions.addToCart(itemId);
         const input = document.getElementById('inventory-search');
-        if (input) input.value = '';
+        if (input) {
+            input.value = '';
+            input.removeAttribute('aria-activedescendant');
+        }
+        LumeTerminal.actions._searchListActiveIndex = -1;
         const box = document.getElementById('search-suggestions');
         if (box) {
             box.classList.add('hidden');
             box.innerHTML = '';
         }
+        LumeTerminal.state.dashboardSearchQuery = '';
+        if (LumeTerminal.ui?.refreshDashboardGrid) {
+            LumeTerminal.ui.refreshDashboardGrid();
+        }
     } catch (error) {
         console.error('Error selecting suggestion:', error);
+    }
+};
+
+LumeTerminal.actions.clearDashboardSearch = function() {
+    const input = document.getElementById('inventory-search');
+    if (input) {
+        input.value = '';
+        input.removeAttribute('aria-activedescendant');
+    }
+    LumeTerminal.state.dashboardSearchQuery = '';
+    LumeTerminal.actions._searchListActiveIndex = -1;
+    const box = document.getElementById('search-suggestions');
+    if (box) {
+        box.classList.add('hidden');
+        box.innerHTML = '';
+    }
+    if (LumeTerminal.ui?.refreshDashboardGrid) {
+        LumeTerminal.ui.refreshDashboardGrid();
     }
 };
 
@@ -163,7 +209,7 @@ LumeTerminal.actions.completeTransaction = function() {
     try {
         // Validate cart exists and has items
         if (!LumeTerminal.state.cart || LumeTerminal.state.cart.length === 0) {
-            alert('Cart is empty!');
+            showToast('Cart is empty.', { variant: 'info' });
             return;
         }
 
@@ -197,27 +243,19 @@ LumeTerminal.actions.completeTransaction = function() {
         // Persist locally (offline-first)
         LumeTerminal.state.sales.push(transaction);
 
-        const salesKey = (typeof SALES_KEY !== 'undefined') ? SALES_KEY : 'lume_vault';
-        localStorage.setItem(salesKey, JSON.stringify(LumeTerminal.state.sales));
+        localStorage.setItem(SALES_KEY, JSON.stringify(LumeTerminal.state.sales));
 
         // If offline, also queue for "sync" (demo outbox)
         if (!navigator.onLine) {
-            const outboxKey = (typeof OUTBOX_KEY !== 'undefined') ? OUTBOX_KEY : 'lume_outbox_v1';
-            const existing = (typeof safeJsonParse === 'function')
-                ? safeJsonParse(localStorage.getItem(outboxKey), [])
-                : (JSON.parse(localStorage.getItem(outboxKey) || '[]'));
+            const existing = safeJsonParse(localStorage.getItem(OUTBOX_KEY), []);
             const outbox = Array.isArray(existing) ? existing : [];
             outbox.push({ id: transaction.id, createdAt: new Date().toISOString(), deviceId: transaction.deviceId });
-            localStorage.setItem(outboxKey, JSON.stringify(outbox));
+            localStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox));
         } else {
-            // If online, mark last sync moment for UI
-            const lastSyncKey = (typeof LAST_SYNC_KEY !== 'undefined') ? LAST_SYNC_KEY : 'lume_last_sync_v1';
-            localStorage.setItem(lastSyncKey, new Date().toISOString());
+            localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
         }
 
-        if (typeof updateSyncStatusUI === 'function') {
-            updateSyncStatusUI();
-        }
+        updateSyncStatusUI();
 
         // Clear cart after successful transaction
         LumeTerminal.state.cart = [];
@@ -232,10 +270,13 @@ LumeTerminal.actions.completeTransaction = function() {
             LumeTerminal.ui.renderAnalytics();
         }
 
-        alert(navigator.onLine ? 'Transaction completed successfully!' : 'Saved offline (pending sync).');
+        showToast(
+            navigator.onLine ? 'Transaction completed successfully.' : 'Saved offline (pending sync).',
+            { variant: 'success' }
+        );
     } catch (error) {
         console.error('Error completing transaction:', error);
-        alert('Error completing transaction');
+        showToast('Could not complete transaction.', { variant: 'error' });
     }
 };
 
@@ -330,38 +371,33 @@ const scannerActions = {
         if (LumeTerminal.ui?.rememberFocus) LumeTerminal.ui.rememberFocus('scanner');
         queueMicrotask(() => { if (closeBtn) closeBtn.focus(); else cameraUI.focus(); });
 
-        if (typeof Html5Qrcode !== 'undefined') {
-            try {
-                if (this.html5QrCode && this.html5QrCode.isScanning) {
-                    await this.html5QrCode.stop();
-                }
-                if (!this.html5QrCode) this.html5QrCode = new Html5Qrcode('barcode-reader');
-
-                const self = this;
-                await this.html5QrCode.start(
-                    { facingMode: this.currentFacingMode },
-                    { fps: 8, qrbox: { width: 220, height: 120 } },
-                    (decodedText) => {
-                        if (!LumeTerminal.actions.isScanning) return;
-                        const now = Date.now();
-                        if (now - self.lastScannedAt < self.scanCooldownMs) return;
-                        const product = self.findProductByBarcode(decodedText);
-                        if (product) {
-                            self.lastScannedAt = now;
-                            LumeTerminal.actions.addToCart(product.id);
-                            self.beep();
-                            const counter = document.getElementById('scan-counter');
-                            if (counter) counter.textContent = 'In cart: ' + (LumeTerminal.state.cart.reduce((s, i) => s + i.quantity, 0));
-                        }
-                    },
-                    () => {}
-                );
-            } catch (err) {
-                alert('Camera error: ' + (err.message || err));
-                LumeTerminal.actions.finishScanning();
+        try {
+            if (this.html5QrCode && this.html5QrCode.isScanning) {
+                await this.html5QrCode.stop();
             }
-        } else {
-            alert('Barcode scanner library not loaded.');
+            if (!this.html5QrCode) this.html5QrCode = new Html5Qrcode('barcode-reader');
+
+            const self = this;
+            await this.html5QrCode.start(
+                { facingMode: this.currentFacingMode },
+                { fps: 8, qrbox: { width: 220, height: 120 } },
+                (decodedText) => {
+                    if (!LumeTerminal.actions.isScanning) return;
+                    const now = Date.now();
+                    if (now - self.lastScannedAt < self.scanCooldownMs) return;
+                    const product = self.findProductByBarcode(decodedText);
+                    if (product) {
+                        self.lastScannedAt = now;
+                        LumeTerminal.actions.addToCart(product.id);
+                        self.beep();
+                        const counter = document.getElementById('scan-counter');
+                        if (counter) counter.textContent = 'In cart: ' + (LumeTerminal.state.cart.reduce((s, i) => s + i.quantity, 0));
+                    }
+                },
+                () => {}
+            );
+        } catch (err) {
+            showToast('Camera error: ' + (err.message || err), { variant: 'error', duration: 6000 });
             LumeTerminal.actions.finishScanning();
         }
     },
@@ -396,6 +432,10 @@ const scannerActions = {
  */
 LumeTerminal.actions.closeAll = function() {
     try {
+        if (LumeTerminal.ui?.closeClearCartModal) {
+            LumeTerminal.ui.closeClearCartModal();
+        }
+
         const wasCartOpen = document.body.classList.contains('cart-open');
         // Remove CSS classes that control panel visibility
         document.body.classList.remove('sidebar-open');
@@ -435,11 +475,21 @@ Object.assign(LumeTerminal.actions, scannerActions);
  */
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        // Hide search suggestions even when no panels are open
+        const clearModal = document.getElementById('clear-cart-modal');
+        if (clearModal && !clearModal.classList.contains('hidden')) {
+            LumeTerminal.ui.closeClearCartModal();
+            e.preventDefault();
+            return;
+        }
         const suggestionsBox = document.getElementById('search-suggestions');
         if (suggestionsBox && !suggestionsBox.classList.contains('hidden')) {
             suggestionsBox.classList.add('hidden');
             suggestionsBox.innerHTML = '';
+            LumeTerminal.actions._searchListActiveIndex = -1;
+            const inp = document.getElementById('inventory-search');
+            if (inp) inp.removeAttribute('aria-activedescendant');
+            e.preventDefault();
+            return;
         }
         LumeTerminal.actions.closeAll();
     }
